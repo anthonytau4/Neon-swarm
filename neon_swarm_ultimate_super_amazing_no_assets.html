@@ -2122,6 +2122,58 @@
         @media (max-width: 860px), (orientation: landscape) and (max-height: 470px) {
             .cause-choice-btn { min-height: auto !important; }
         }
+
+        /* =====================================================================
+           IN-GAME HUD CLEANUP + blocking-modal layering (no more clutter bleed).
+           ===================================================================== */
+        /* Blocking gameplay modals sit ABOVE the HUD with a focused dark backdrop */
+        #causeUpgradePrompt, #gameOver, #pauseScreen, #firstPersonPrompt { z-index: 60 !important; }
+        #causeUpgradePrompt {
+            background: radial-gradient(circle at 50% 0%, rgba(22,9,44,0.84), rgba(2,4,12,0.94) 62%) !important;
+            backdrop-filter: blur(8px) !important; -webkit-backdrop-filter: blur(8px) !important;
+        }
+        #gameOver {
+            background: radial-gradient(circle at 50% 40%, rgba(44,7,22,0.82), rgba(2,4,12,0.95) 66%) !important;
+            backdrop-filter: blur(8px) !important; -webkit-backdrop-filter: blur(8px) !important;
+        }
+        /* Hide the HUD entirely while a blocking decision modal is up */
+        html.ns-modal #hud { visibility: hidden !important; }
+
+        /* Compact, tidy HUD controls */
+        .hud-currency {
+            padding: 0.42rem 0.95rem !important;
+            border-radius: 999px !important;
+            background: rgba(4,12,28,0.6) !important;
+            border: 1px solid rgba(46,200,255,0.3) !important;
+            box-shadow: 0 0 14px rgba(0,0,0,0.3), inset 0 0 12px rgba(32,247,255,0.05) !important;
+            backdrop-filter: blur(6px) !important; -webkit-backdrop-filter: blur(6px) !important;
+            clip-path: none !important;
+        }
+        .hud-ctrl-btn {
+            font-size: 0.62rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase;
+            padding: 0.36rem 0.72rem; color: #cdeeff;
+            background: linear-gradient(180deg, rgba(12,30,54,0.92), rgba(6,16,34,0.92));
+            border: 1px solid rgba(46,200,255,0.42);
+            box-shadow: 0 0 10px rgba(32,247,255,0.16), inset 0 1px 0 rgba(255,255,255,0.08);
+            clip-path: polygon(0 5px, 5px 0, 100% 0, 100% calc(100% - 5px), calc(100% - 5px) 100%, 0 100%);
+            transition: border-color .15s ease, box-shadow .15s ease, color .15s ease;
+        }
+        .hud-ctrl-btn:hover { border-color: rgba(46,220,255,0.85); box-shadow: 0 0 16px rgba(32,247,255,0.4); color: #fff; }
+
+        /* Slim the active Cause & Effect pill so it stays out of the way */
+        #causeEffectHud {
+            width: auto !important;
+            max-width: min(62vw, 540px) !important;
+            min-height: 0 !important;
+            padding: 0.5rem 0.95rem 0.5rem 3rem !important;
+            border-radius: 0.7rem !important;
+            margin: 0.45rem auto 0 !important;
+        }
+        #causeEffectHud::before { width: 1.95rem !important; height: 1.95rem !important; left: 0.6rem !important; }
+        #causeEffectHud::after { font-size: 1rem !important; left: 1.27rem !important; }
+        #causeEffectHud .ce-kicker { font-size: 0.6em !important; margin-bottom: 0.02rem !important; }
+        #causeEffectHud .ce-title { font-size: 1.04em !important; margin-bottom: 0.04rem !important; }
+        #causeEffectHud .ce-desc { font-size: 0.78em !important; }
 </style>
 </head>
 <body class="text-white relative">
@@ -2216,27 +2268,26 @@
     <!-- HUD -->
     <div id="hud" class="absolute top-0 left-0 w-full p-4 flex flex-col gap-2 pointer-events-none hidden z-20">
         
-        <div class="flex justify-between items-start w-full max-w-6xl mx-auto">
+        <div class="flex justify-between items-start w-full max-w-full mx-auto gap-4">
             <div class="flex flex-col">
                 <span class="text-xs text-cyan-400 font-bold tracking-widest">SCORE</span>
                 <span id="scoreDisplay" class="text-3xl font-black text-white text-glow text-cyan-400">0</span>
             </div>
-            
-            <div class="flex flex-col items-center justify-center transform scale-110">
-                <span class="text-xs text-pink-500 font-bold tracking-widest text-glow">WAVE</span>
-                <span id="waveDisplay" class="text-4xl font-black text-white text-glow">1</span>
-            </div>
-            
-            <div class="flex gap-4 items-center bg-gray-900/60 p-3 rounded-xl border border-cyan-500/30 backdrop-blur-md shadow-lg pointer-events-auto">
-                <div class="flex items-center"><span class="currency-icon icon-coin"></span><span id="hud-coins" class="text-sm font-bold text-yellow-400">0</span></div>
-                <div class="flex items-center"><span class="currency-icon icon-gem"></span><span id="hud-gems" class="text-sm font-bold text-green-400">0</span></div>
-                <div class="flex items-center"><span class="currency-icon icon-diamond"></span><span id="hud-diamonds" class="text-sm font-bold text-cyan-400">0</span></div>
+
+            <div id="hudCurrency" class="hud-currency flex gap-3 items-center pointer-events-auto self-start mt-1">
+                <div class="flex items-center gap-1"><span class="currency-icon icon-coin"></span><span id="hud-coins" class="text-sm font-bold text-yellow-400">0</span></div>
+                <div class="flex items-center gap-1"><span class="currency-icon icon-gem"></span><span id="hud-gems" class="text-sm font-bold text-green-400">0</span></div>
+                <div class="flex items-center gap-1"><span class="currency-icon icon-diamond"></span><span id="hud-diamonds" class="text-sm font-bold text-cyan-400">0</span></div>
             </div>
 
-            <div class="flex flex-col items-end gap-2">
-                <div class="flex gap-2 justify-end pointer-events-auto">
-                    <button id="hudPauseBtn" type="button" class="fullscreen-btn px-3 py-2 text-[10px] pointer-events-auto">PAUSE</button>
-                    <button id="hudFullscreenBtn" type="button" class="fullscreen-btn px-3 py-2 text-[10px] pointer-events-auto">FULL SCREEN</button>
+            <div class="flex flex-col items-end gap-1.5">
+                <div class="flex flex-col items-end leading-none">
+                    <span class="text-xs text-pink-500 font-bold tracking-widest text-glow">WAVE</span>
+                    <span id="waveDisplay" class="text-4xl font-black text-white text-glow">1</span>
+                </div>
+                <div class="flex gap-2 justify-end">
+                    <button id="hudPauseBtn" type="button" class="hud-ctrl-btn pointer-events-auto">PAUSE</button>
+                    <button id="hudFullscreenBtn" type="button" class="hud-ctrl-btn pointer-events-auto">FULL</button>
                 </div>
                 <div class="flex gap-1 flex-wrap justify-end w-32" id="healthDisplay"></div>
             </div>
@@ -7130,8 +7181,18 @@
                     } else if (!vis) {
                         overlay.dataset.nsOpen = '0';
                     }
+                    nsUpdateModalState();
                 });
                 obs.observe(overlay, { attributes: true, attributeFilter: ['class', 'style'] });
+            }
+
+            // Hide the HUD while a blocking decision modal (reward pick / game over) is open.
+            function nsUpdateModalState() {
+                const blocking = ['causeUpgradePrompt', 'gameOver'].some(id => {
+                    const el = document.getElementById(id);
+                    return el && getComputedStyle(el).display !== 'none';
+                });
+                document.documentElement.classList.toggle('ns-modal', blocking);
             }
 
             // Per-letter spring entrance for the title (keeps the clipped gradient intact).
@@ -7181,7 +7242,7 @@
             function addButtonPhysics() {
                 if (reduceMotion()) return;
                 const sel = '#menu button, #shopScreen button, #settingsScreen button, #gameOver button,' +
-                            ' .premium-pause-btn, .powerup-btn, .cause-confirm-btn, .cause-choice-btn, .shop-tab, .fullscreen-btn';
+                            ' .premium-pause-btn, .powerup-btn, .cause-confirm-btn, .cause-choice-btn, .shop-tab, .fullscreen-btn, .hud-ctrl-btn';
                 document.querySelectorAll(sel).forEach(btn => {
                     if (btn.dataset.nsPhys) return;
                     btn.dataset.nsPhys = '1';
