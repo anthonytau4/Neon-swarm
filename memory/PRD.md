@@ -34,3 +34,11 @@ transform none after deploy; grid floor does not overlay gameplay; HUD does not 
 - Optional: apply deploy reveal to the orientation/flip overlay.
 - Optional: sound cue synced to the deploy flash.
 - Optional: shareable score card on Game Over for virality.
+
+## Update (2026-06-16, pass 2)
+- Replaced scaleY "unfold" with 3D rotateX FOLD-OUT on open + FOLD-IN on close (WAAPI in playOpen/playClose; close detected via inline opacity='0').
+- Removed dark/opaque backdrops on shop/settings/pause/gameover/prompts (transparent bg + backdrop:none). Pause vignette transparent. orientationOverlay keeps its dark.
+- PERF: removed always-on full-screen animations (ambientPulse/ultraAuroraDrift/neonGridDrift). Added html.ns-ingame class (toggled by watching #hud) that hides html::before/after + body::before/after during gameplay for FPS.
+- PHYSICS: title split into per-letter .ns-letter spans with staggered 3D spring entrance; continuous gradient preserved via per-letter background-size/position. Springy button press on all buttons (pointerdown squash -> overshoot release).
+- FIRST PERSON glide: updateFirstPersonMovement now uses velocity momentum (accel into input, coast on release, frame-rate-independent smoothing) + smoothed yaw rate (firstPersonVelX/Y, firstPersonYawRate). Reset in activate/end.
+- Verified: menu, settings(open+close), shop, in-game pause — all fold correctly, transparent backdrops, gradients intact, no console errors.

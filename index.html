@@ -12,7 +12,6 @@
             margin: 0; padding: 0; width: 100%; height: 100%;
             background: radial-gradient(circle at 50% -20%, #1a3f5f 0%, #0f1a2e 25%, #050812 60%, #000000 100%);
             overflow: hidden; font-family: 'Orbitron', sans-serif; user-select: none;
-            animation: ambientPulse 8s ease-in-out infinite;
         }
         
         @keyframes ambientPulse {
@@ -618,7 +617,7 @@
         @keyframes flipPhone { 0%,100% { transform: rotate(0deg); } 50% { transform: rotate(90deg); } }
         .paused-vignette {
             position: absolute; inset: 0; pointer-events: none; z-index: 34; display: none;
-            background: rgba(0,0,0,0.62); backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px);
+            background: transparent;
         }
         .paused-vignette.active { display: block; }
 
@@ -681,7 +680,6 @@
                 radial-gradient(circle at 50% 14%, rgba(124,58,237,0.20), transparent 36%),
                 linear-gradient(110deg, transparent 0 36%, rgba(255,255,255,0.035) 44%, transparent 52% 100%);
             mix-blend-mode: screen;
-            animation: ultraAuroraDrift 11s ease-in-out infinite alternate;
         }
         html::after {
             content: '';
@@ -1477,9 +1475,8 @@
                 radial-gradient(circle, rgba(32,247,255,0.62) 1px, transparent 1.6px);
             background-size: 86px 86px, 86px 86px, 122px 122px;
             background-position: 0 0, 0 0, 12px 18px;
-            opacity: 0.42;
+            opacity: 0.34;
             mix-blend-mode: screen;
-            animation: neonGridDrift 18s linear infinite;
         }
         body::after {
             background:
@@ -1678,13 +1675,13 @@
         }
 
         /* Armory, settings, game over: same exact hologrid language */
-        #shopScreen, #settingsScreen, #gameOver, #pauseScreen, #causeUpgradePrompt, #firstPersonPrompt, #orientationOverlay {
-            background:
-                radial-gradient(circle at 18% 80%, rgba(0,215,255,0.18), transparent 40%),
-                radial-gradient(circle at 82% 78%, rgba(255,43,214,0.18), transparent 42%),
-                rgba(2,5,14,0.46) !important;
-            backdrop-filter: blur(3px) saturate(1.2) brightness(0.92) !important;
-            -webkit-backdrop-filter: blur(3px) saturate(1.2) brightness(0.92) !important;
+        #shopScreen, #settingsScreen, #gameOver, #pauseScreen, #causeUpgradePrompt, #firstPersonPrompt {
+            background: transparent !important;
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
+        }
+        #orientationOverlay {
+            background: rgba(2,4,12,0.9) !important;
         }
         #shopScreen > .glass-panel { max-width: min(1180px, 96vw) !important; }
         #shop-tabs { border-bottom-color: rgba(32,247,255,0.22) !important; }
@@ -1960,6 +1957,14 @@
            POPUP DEPLOY — a bright line draws across the centre, flashes, then
            the panel unfolds outward from that line. Triggered per-open via JS.
            ===================================================================== */
+        /* In-game: drop the full-screen composited decoration layers for max FPS */
+        html.ns-ingame::before, html.ns-ingame::after { opacity: 0 !important; }
+        html.ns-ingame body::before, html.ns-ingame body::after { opacity: 0 !important; }
+
+        /* Per-letter title physics */
+        #menu h1 { perspective: 760px; }
+        .ns-letter { display: inline-block; will-change: transform; backface-visibility: hidden; transform-style: preserve-3d; }
+
         /* POPUP DEPLOY — the panel "unfold from centre line" is driven by the
            Web Animations API in JS (reliable one-shot); the bright line + flash
            below are decorative overlay elements injected fresh on each open. */
@@ -2961,13 +2966,14 @@
             firstPersonTimer = firstPersonLocked ? Number.POSITIVE_INFINITY : Math.max(0.1, duration);
             firstPersonYaw = Number.isFinite(firstPersonYaw) ? firstPersonYaw : -Math.PI / 2;
             firstPersonJump = 0; firstPersonJumpVelocity = 0; firstPersonFireCooldown = 0;
+            firstPersonVelX = 0; firstPersonVelY = 0; firstPersonYawRate = 0;
             showFloatingUI(firstPersonLocked ? 'FIRST PERSON ONLY MODE' : 'FIRST PERSON DROP: 30 SECONDS');
             autoCollectLooseDropsForFirstPerson();
             updateFirstPersonControlsVisibility();
         }
 
         function endFirstPersonMode() {
-            firstPersonActive = false; firstPersonLocked = false; firstPersonTimer = 0; firstPersonJump = 0; firstPersonJumpVelocity = 0; fpsInput.fire = false; fpsInput.jump = false;
+            firstPersonActive = false; firstPersonLocked = false; firstPersonTimer = 0; firstPersonJump = 0; firstPersonJumpVelocity = 0; firstPersonVelX = 0; firstPersonVelY = 0; firstPersonYawRate = 0; fpsInput.fire = false; fpsInput.jump = false;
             updateFirstPersonControlsVisibility();
         }
 
@@ -3008,10 +3014,10 @@
             }
             updateFirstPersonControlsVisibility();
 
-            const lookAmount = fpsInput.lookX || 0;
-            firstPersonYaw += lookAmount * dt * 2.6;
-            if (fpsInput.keys['ArrowLeft']) firstPersonYaw -= dt * 2.3;
-            if (fpsInput.keys['ArrowRight']) firstPersonYaw += dt * 2.3;
+            const targetLook = (fpsInput.lookX || 0) * 2.6
+                + ((fpsInput.keys['ArrowRight'] ? 1 : 0) - (fpsInput.keys['ArrowLeft'] ? 1 : 0)) * 2.3;
+            firstPersonYawRate += (targetLook - firstPersonYawRate) * (1 - Math.exp(-12 * dt));
+            firstPersonYaw += firstPersonYawRate * dt;
 
             if ((fpsInput.jump || fpsInput.keys['Space']) && firstPersonJump <= 0.01) {
                 firstPersonJumpVelocity = 6.2;
@@ -3054,11 +3060,24 @@
             const forwardY = Math.sin(firstPersonYaw);
             const rightX = Math.cos(firstPersonYaw + Math.PI / 2);
             const rightY = Math.sin(firstPersonYaw + Math.PI / 2);
-            const moveSpeed = (185 + upgrades.speed.effect(upgrades.speed.level) * 320) * dt;
-            player.x += (forwardX * -my + rightX * mx) * moveSpeed;
-            player.y += (forwardY * -my + rightY * mx) * moveSpeed;
-            player.x = clamp(player.x, player.radius, worldWidth - player.radius);
-            player.y = clamp(player.y, player.radius, worldHeight - player.radius);
+            const maxSpeed = 185 + upgrades.speed.effect(upgrades.speed.level) * 320;
+            // Desired omni-directional velocity (Black Ops 6 style glide)
+            const targetVX = (forwardX * -my + rightX * mx) * maxSpeed;
+            const targetVY = (forwardY * -my + rightY * mx) * maxSpeed;
+            const moving = mag > 0.01;
+            // Accelerate hard into input, coast smoothly on release — frame-rate independent.
+            const accel = moving ? 12.5 : 6.5;
+            const smooth = 1 - Math.exp(-accel * dt);
+            firstPersonVelX += (targetVX - firstPersonVelX) * smooth;
+            firstPersonVelY += (targetVY - firstPersonVelY) * smooth;
+            player.x += firstPersonVelX * dt;
+            player.y += firstPersonVelY * dt;
+            // Bleed momentum into arena walls instead of a hard stop.
+            const nx = clamp(player.x, player.radius, worldWidth - player.radius);
+            const ny = clamp(player.y, player.radius, worldHeight - player.radius);
+            if (nx !== player.x) firstPersonVelX *= 0.35;
+            if (ny !== player.y) firstPersonVelY *= 0.35;
+            player.x = nx; player.y = ny;
             pointer.x = player.x + Math.cos(firstPersonYaw) * 160;
             pointer.y = player.y + Math.sin(firstPersonYaw) * 160;
         }
@@ -6921,9 +6940,11 @@
             });
         });
 
-        // ELITE PASS — inject reference HUD decorations (corner-bracket frame,
-        // perspective grid floor) + cinematic popup deploy. No heavy markup touched.
+        // ELITE PASS — HUD corner frame, grid floor, fold-out/fold-in popups,
+        // per-letter title physics, springy buttons, and an in-game perf toggle.
         (function nsEliteDecor() {
+            const reduceMotion = () => window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
             function addCorners(el) {
                 if (!el || el.querySelector(':scope > .ns-corner')) return;
                 ['tl', 'tr', 'bl', 'br'].forEach(pos => {
@@ -6932,37 +6953,143 @@
                     el.appendChild(c);
                 });
             }
-            // Replay the "line draws -> flash -> unfold" deploy each time a popup opens.
-            function playDeploy(overlay) {
-                const panel = overlay.querySelector('.glass-panel, .premium-pause-panel, .cause-card, .powerup-card');
+
+            function panelOf(overlay) {
+                return overlay.querySelector('.glass-panel, .premium-pause-panel, .cause-card, .powerup-card');
+            }
+
+            // OPEN — a bright line draws across the centre, flashes, the panel folds out.
+            function playOpen(overlay) {
+                const panel = panelOf(overlay);
                 overlay.querySelectorAll(':scope > .ns-deploy, :scope > .ns-deploy-flash').forEach(n => n.remove());
-                const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+                if (reduceMotion()) return;
                 const line = document.createElement('div'); line.className = 'ns-deploy';
                 const flash = document.createElement('div'); flash.className = 'ns-deploy-flash';
                 overlay.appendChild(flash); overlay.appendChild(line);
-                if (panel && !reduce && panel.animate) {
+                if (panel && panel.animate) {
                     panel.style.transformOrigin = 'center center';
-                    panel.animate([
-                        { opacity: 0, transform: 'scaleY(.02) scaleX(.92)', filter: 'brightness(2.6) saturate(1.4)' },
-                        { opacity: 1, transform: 'scaleY(.05) scaleX(1)',  filter: 'brightness(2.6) saturate(1.4)', offset: 0.32 },
-                        { opacity: 1, transform: 'scaleY(1.06) scaleX(1)', filter: 'brightness(1.5)',  offset: 0.58 },
-                        {            transform: 'scaleY(.975) scaleX(1)', filter: 'brightness(1.1)',  offset: 0.78 },
-                        { opacity: 1, transform: 'none', filter: 'none' }
-                    ], { duration: 560, delay: 80, easing: 'cubic-bezier(.18,.9,.2,1.05)', fill: 'none' });
+                    if (panel.__nsFold) panel.__nsFold.cancel();
+                    panel.__nsFold = panel.animate([
+                        { opacity: 0, transform: 'perspective(1200px) rotateX(-86deg) scale(.9)',  filter: 'brightness(1.85)' },
+                        { opacity: 1, transform: 'perspective(1200px) rotateX(9deg) scale(1.018)', filter: 'brightness(1.22)', offset: 0.52 },
+                        {            transform: 'perspective(1200px) rotateX(-3.5deg) scale(.996)', filter: 'brightness(1.07)', offset: 0.77 },
+                        { opacity: 1, transform: 'perspective(1200px) rotateX(0deg) scale(1)',     filter: 'none' }
+                    ], { duration: 560, delay: 30, easing: 'cubic-bezier(.2,.86,.24,1)', fill: 'none' });
                 }
+                addButtonPhysics();
                 setTimeout(() => { line.remove(); flash.remove(); }, 820);
             }
+
+            // CLOSE — the panel folds back in as the overlay fades.
+            function playClose(overlay) {
+                const panel = panelOf(overlay);
+                if (!panel || !panel.animate || reduceMotion()) return;
+                panel.style.transformOrigin = 'center center';
+                if (panel.__nsFold) panel.__nsFold.cancel();
+                panel.__nsFold = panel.animate([
+                    { opacity: 1, transform: 'perspective(1200px) rotateX(0deg) scale(1)' },
+                    { opacity: 0, transform: 'perspective(1200px) rotateX(74deg) scale(.9)' }
+                ], { duration: 240, easing: 'cubic-bezier(.45,0,.75,.25)', fill: 'forwards' });
+            }
+
             function watch(overlay) {
                 if (!overlay) return;
-                const isOpen = () => getComputedStyle(overlay).display !== 'none' && getComputedStyle(overlay).visibility !== 'hidden';
-                overlay.dataset.nsOpen = isOpen() ? '1' : '0';
+                const visible = () => getComputedStyle(overlay).display !== 'none';
+                overlay.dataset.nsOpen = visible() ? '1' : '0';
                 const obs = new MutationObserver(() => {
-                    const open = isOpen();
-                    if (open && overlay.dataset.nsOpen !== '1') { overlay.dataset.nsOpen = '1'; requestAnimationFrame(() => playDeploy(overlay)); }
-                    else if (!open) { overlay.dataset.nsOpen = '0'; }
+                    const vis = visible();
+                    const closing = overlay.style.opacity === '0';
+                    if (vis && !closing && overlay.dataset.nsOpen !== '1') {
+                        overlay.dataset.nsOpen = '1';
+                        requestAnimationFrame(() => playOpen(overlay));
+                    } else if (vis && closing && overlay.dataset.nsOpen === '1') {
+                        overlay.dataset.nsOpen = '0';
+                        playClose(overlay);
+                    } else if (!vis) {
+                        overlay.dataset.nsOpen = '0';
+                    }
                 });
                 obs.observe(overlay, { attributes: true, attributeFilter: ['class', 'style'] });
             }
+
+            // Per-letter spring entrance for the title (keeps the clipped gradient intact).
+            function splitTitle() {
+                const h1 = document.querySelector('#menu h1');
+                if (!h1 || h1.dataset.nsSplit) return;
+                h1.dataset.nsSplit = '1';
+                const grad = 'linear-gradient(90deg, #26fbff 0%, #4aa3ff 34%, #a686ff 55%, #ff59de 82%, #ff9ae8 100%)';
+                const text = h1.textContent;
+                h1.textContent = '';
+                const frag = document.createDocumentFragment();
+                [...text].forEach(ch => {
+                    const s = document.createElement('span');
+                    s.className = 'ns-letter';
+                    s.textContent = ch === ' ' ? '\u00A0' : ch;
+                    s.style.backgroundImage = grad;
+                    s.style.webkitBackgroundClip = 'text';
+                    s.style.backgroundClip = 'text';
+                    s.style.webkitTextFillColor = 'transparent';
+                    s.style.color = 'transparent';
+                    frag.appendChild(s);
+                });
+                h1.appendChild(frag);
+                const spans = [...h1.querySelectorAll('.ns-letter')];
+                // Each letter samples its slice of one continuous title-wide gradient.
+                const layoutGrad = () => {
+                    const w = h1.clientWidth || 1;
+                    spans.forEach(s => {
+                        s.style.backgroundSize = w + 'px 100%';
+                        s.style.backgroundPosition = (-s.offsetLeft) + 'px 0';
+                    });
+                };
+                layoutGrad();
+                window.addEventListener('resize', layoutGrad);
+                if (reduceMotion()) return;
+                spans.forEach((s, i) => {
+                    s.animate([
+                        { opacity: 0, transform: 'translateY(-48px) rotateX(-90deg) scale(.5)' },
+                        { opacity: 1, transform: 'translateY(11px) rotateX(14deg) scale(1.14)', offset: 0.62 },
+                        {            transform: 'translateY(-5px) scale(.97)', offset: 0.82 },
+                        { opacity: 1, transform: 'translateY(0) rotateX(0deg) scale(1)' }
+                    ], { duration: 780, delay: 130 + i * 52, easing: 'cubic-bezier(.2,.9,.2,1.12)', fill: 'backwards' });
+                });
+            }
+
+            // Springy press physics on every button.
+            function addButtonPhysics() {
+                if (reduceMotion()) return;
+                const sel = '#menu button, #shopScreen button, #settingsScreen button, #gameOver button,' +
+                            ' .premium-pause-btn, .powerup-btn, .cause-confirm-btn, .cause-choice-btn, .shop-tab, .fullscreen-btn';
+                document.querySelectorAll(sel).forEach(btn => {
+                    if (btn.dataset.nsPhys) return;
+                    btn.dataset.nsPhys = '1';
+                    const press = () => {
+                        if (btn.__nsPress) btn.__nsPress.cancel();
+                        btn.__nsPress = btn.animate([{ transform: 'scale(1)' }, { transform: 'scale(.9)' }],
+                            { duration: 100, easing: 'cubic-bezier(.3,0,.2,1)', fill: 'forwards' });
+                    };
+                    const release = () => {
+                        if (btn.__nsPress) btn.__nsPress.cancel();
+                        btn.__nsPress = btn.animate(
+                            [{ transform: 'scale(.9)' }, { transform: 'scale(1.09)' }, { transform: 'scale(.98)' }, { transform: 'scale(1)' }],
+                            { duration: 470, easing: 'cubic-bezier(.2,1.35,.3,1)', fill: 'none' });
+                    };
+                    btn.addEventListener('pointerdown', press);
+                    btn.addEventListener('pointerup', release);
+                    btn.addEventListener('pointerleave', release);
+                    btn.addEventListener('pointercancel', release);
+                });
+            }
+
+            // Drop heavy full-screen decoration layers while playing (FPS win).
+            function watchHud() {
+                const hud = document.getElementById('hud');
+                if (!hud) return;
+                const apply = () => document.documentElement.classList.toggle('ns-ingame', !hud.classList.contains('hidden'));
+                apply();
+                new MutationObserver(apply).observe(hud, { attributes: true, attributeFilter: ['class'] });
+            }
+
             function run() {
                 ['#menu > .glass-panel', '#shopScreen > .glass-panel',
                  '#settingsScreen > .glass-panel', '#gameOver > .glass-panel',
@@ -6979,6 +7106,10 @@
                 ['shopScreen', 'settingsScreen', 'gameOver', 'pauseScreen',
                  'causeUpgradePrompt', 'firstPersonPrompt', 'orientationOverlay']
                     .forEach(id => watch(document.getElementById(id)));
+
+                splitTitle();
+                addButtonPhysics();
+                watchHud();
             }
             if (document.readyState !== 'loading') run();
             else document.addEventListener('DOMContentLoaded', run);
@@ -6986,5 +7117,8 @@
 
         console.log('✨ NEON SWARM — ELITE REFERENCE PASS LOADED ✨');
     </script>
+</body>
+</html>
+script>
 </body>
 </html>
