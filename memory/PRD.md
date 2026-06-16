@@ -42,3 +42,9 @@ transform none after deploy; grid floor does not overlay gameplay; HUD does not 
 - PHYSICS: title split into per-letter .ns-letter spans with staggered 3D spring entrance; continuous gradient preserved via per-letter background-size/position. Springy button press on all buttons (pointerdown squash -> overshoot release).
 - FIRST PERSON glide: updateFirstPersonMovement now uses velocity momentum (accel into input, coast on release, frame-rate-independent smoothing) + smoothed yaw rate (firstPersonVelX/Y, firstPersonYawRate). Reset in activate/end.
 - Verified: menu, settings(open+close), shop, in-game pause — all fold correctly, transparent backdrops, gradients intact, no console errors.
+
+## Update (2026-06-16, pass 3 - Cause&Effect + Armory)
+- ROOT CAUSE of messy cards: .cause-choice-btn & .shop-action inherited the hexagonal chevron button clip-path (line ~1649) which sliced card edges/text. Overrode with clean chamfered-rect clip-path.
+- Cause & Effect reward cards: CSS grid layout (name / desc / chips-row), normal-case descriptions, chips pinned bottom on one line (nowrap), confirm button declipped + min-width so text fits, preview card flex with stats pinned bottom, selected indicator changed from overlapping "SELECTED" text badge to a compact corner ✓ circle.
+- Armory: shop-item flex column equal-height, declipped readable REFUND (red) / UPGRADE (bright magenta, readable when unaffordable) buttons, brighter titles/desc.
+- All appended as authoritative CSS at end of <style>; verified via forced-render screenshots (menu hidden) for both good/bad previews, weapon slot, and selected state. JS syntax OK, no console errors.

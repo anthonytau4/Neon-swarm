@@ -2000,6 +2000,128 @@
             #exp-bar::after, .ns-corner, #scoreDisplay, #waveDisplay,
             .ns-wipe, .ns-deploy, .ns-deploy-flash { animation: none !important; }
         }
+
+        /* =====================================================================
+           ARMORY POLISH — clean cards, readable, non-clipped action buttons.
+           ===================================================================== */
+        #shop-grid { gap: 0.9rem !important; padding-bottom: 1.1rem !important; }
+        .shop-item {
+            display: flex !important; flex-direction: column !important;
+            min-height: 158px !important;
+            padding: 0.95rem 1rem 0.9rem !important;
+            gap: 0.5rem !important;
+        }
+        .shop-title { font-size: 1rem !important; color: #eaf6ff !important; }
+        .shop-desc { flex: 1 1 auto !important; color: #c7d4e2 !important; font-size: 0.82rem !important; line-height: 1.4 !important; }
+        .shop-actions { margin-top: auto !important; gap: 0.6rem !important; }
+        .shop-action {
+            border-radius: 0 !important;
+            clip-path: polygon(0 8px, 8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%) !important;
+            min-height: 2.85rem !important;
+            text-transform: uppercase !important;
+            border-width: 1px !important;
+            filter: none !important;
+        }
+        .shop-action-label { font-size: 0.6em !important; opacity: 0.82 !important; letter-spacing: 0.08em !important; }
+        .shop-action-value { font-size: 0.96em !important; }
+        .shop-upgrade-btn {
+            background: linear-gradient(135deg, rgba(176,92,255,0.96), rgba(236,72,153,0.94)) !important;
+            color: #ffffff !important;
+            border-color: rgba(255,255,255,0.36) !important;
+            box-shadow: 0 0 18px rgba(217,70,239,0.38), inset 0 1px 0 rgba(255,255,255,0.3) !important;
+            text-shadow: 0 1px 3px rgba(40,0,40,0.5) !important;
+        }
+        .shop-upgrade-btn.unaffordable {
+            background: linear-gradient(135deg, rgba(44,33,72,0.92), rgba(52,26,56,0.92)) !important;
+            color: #c3b4e2 !important;
+            border-color: rgba(168,85,247,0.34) !important;
+            box-shadow: inset 0 0 14px rgba(0,0,0,0.4) !important;
+        }
+        .shop-refund-btn {
+            background: linear-gradient(135deg, rgba(74,26,34,0.94), rgba(104,26,44,0.88)) !important;
+            color: #ffc9c9 !important;
+            border-color: rgba(248,113,113,0.44) !important;
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.12) !important;
+        }
+        .shop-refund-btn:disabled { opacity: 0.55 !important; }
+        .shop-max-btn { background: linear-gradient(135deg, rgba(20,83,45,0.85), rgba(16,64,40,0.85)) !important; color: #9af7c0 !important; border-color: rgba(74,222,128,0.45) !important; }
+
+        /* =====================================================================
+           CAUSE & EFFECT REWARD — sharp, aligned cards (no chevron clipping).
+           ===================================================================== */
+        .cause-card { max-width: 1000px !important; padding: 1.3rem 1.4rem !important; }
+        .cause-main-layout {
+            grid-template-columns: minmax(0,1fr) minmax(290px,0.64fr) !important;
+            gap: 1.1rem !important; align-items: stretch !important;
+        }
+        .cause-choice-grid { gap: 0.7rem !important; }
+        .cause-choice-btn {
+            border-radius: 0 !important;
+            clip-path: polygon(0 12px, 12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%) !important;
+            min-height: 172px !important;
+            padding: 1rem 1.05rem 0.9rem !important;
+            text-transform: none !important;
+            text-align: left !important;
+            display: grid !important;
+            grid-template-columns: 1fr auto !important;
+            grid-template-rows: auto 1fr auto !important;
+            grid-template-areas: "name name" "desc desc" "kind level" !important;
+            gap: 0.5rem 0.55rem !important;
+            align-items: start !important;
+            letter-spacing: 0 !important;
+        }
+        .cause-choice-name {
+            grid-area: name !important; margin: 0 !important;
+            font-size: 0.98rem !important; line-height: 1.14 !important;
+            text-transform: uppercase !important; letter-spacing: 0.03em !important;
+            color: #abf1ff !important;
+        }
+        .cause-choice-btn.weapon-card .cause-choice-name { color: #ffe08a !important; }
+        .cause-choice-desc {
+            grid-area: desc !important; margin: 0 !important;
+            text-transform: none !important;
+            font-size: 0.76rem !important; line-height: 1.42 !important; color: #cfdbe8 !important;
+        }
+        .cause-choice-btn .cause-effect-chip {
+            grid-area: kind !important; margin: 0 !important;
+            align-self: end !important; justify-self: start !important;
+            text-transform: uppercase !important;
+            white-space: nowrap !important; font-size: 0.56rem !important; padding: 0.24rem 0.46rem !important;
+        }
+        .cause-choice-btn .cause-level-chip {
+            grid-area: level !important; float: none !important; margin: 0 !important;
+            align-self: end !important; justify-self: end !important;
+        }
+        .cause-choice-btn.weapon-card {
+            min-height: auto !important;
+            grid-template-rows: auto auto auto !important;
+        }
+        .cause-choice-btn.selected .cause-choice-name { padding-right: 1.6rem !important; }
+        .cause-choice-btn.selected::after {
+            content: '✓' !important;
+            top: 0.5rem !important; right: 0.5rem !important; left: auto !important; bottom: auto !important;
+            width: 1.3rem !important; height: 1.3rem !important; padding: 0 !important;
+            display: flex !important; align-items: center !important; justify-content: center !important;
+            border-radius: 999px !important;
+            background: rgba(33,255,155,0.95) !important;
+            border: 1px solid rgba(255,255,255,0.6) !important;
+            color: #03210f !important; font-size: 0.85rem !important; font-weight: 1000 !important;
+            letter-spacing: 0 !important;
+            box-shadow: 0 0 12px rgba(33,255,155,0.65) !important;
+        }
+        .cause-confirm-btn {
+            border-radius: 0 !important;
+            clip-path: polygon(0 10px, 10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%) !important;
+            min-width: 220px !important; white-space: nowrap !important;
+            padding: 0.82rem 1.4rem !important; letter-spacing: 0.08em !important;
+        }
+        .cause-preview-card { display: flex !important; flex-direction: column !important; }
+        .cause-preview-text { color: #d9e2ec !important; }
+        .cause-preview-stats { margin-top: auto !important; padding-top: 0.75rem !important; }
+        .cause-selection-status { color: #cfe0f5 !important; }
+        @media (max-width: 860px), (orientation: landscape) and (max-height: 470px) {
+            .cause-choice-btn { min-height: auto !important; }
+        }
 </style>
 </head>
 <body class="text-white relative">
